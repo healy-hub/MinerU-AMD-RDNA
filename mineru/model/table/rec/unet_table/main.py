@@ -65,7 +65,7 @@ class WiredTableRecognition:
             row_threshold = kwargs.get("row_threshold", 10)
         img = self.load_img(img)
         polygons, rotated_polygons = self.table_structure(img, **kwargs)
-        if polygons is None:
+        if polygons is None or len(polygons) == 0:
             # logging.warning("polygons is None.")
             return WiredTableOutput("", None, None, 0.0)
 
