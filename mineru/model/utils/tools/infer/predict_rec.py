@@ -134,6 +134,8 @@ class TextRecognizer(BaseOCRV20):
         max_wh_ratio = max(max_wh_ratio, imgW / imgH)
         imgW = int(imgH * max_wh_ratio)
         imgW = max(min(imgW, self.limited_max_width), self.limited_min_width)
+        # 将 imgW 对齐到 32，以避免任意宽度图像的 ROCm MIOpen JIT 开销。
+        imgW = math.ceil(imgW / 32) * 32
         h, w = img.shape[:2]
         ratio = w / float(h)
         ratio_imgH = max(math.ceil(imgH * ratio), self.limited_min_width)
@@ -351,6 +353,15 @@ class TextRecognizer(BaseOCRV20):
                                                         max_wh_ratio)
                         norm_img = norm_img[np.newaxis, :]
                         norm_img_batch.append(norm_img)
+                # 将批次填充到固定大小（self.rec_batch_num），以避免 MIOpen 重新编译。避免最后一个部分批次7秒以上的延迟问题。
+                actual_batch_size = len(norm_img_batch)
+                if actual_batch_size < batch_num:
+                    pad_size = batch_num - actual_batch_size
+                    # Use the first image shape as template (they are all same shape here)
+                    # norm_img_batch is a list of [1, C, H, W] arrays
+                    pad_img = np.zeros_like(norm_img_batch[0])
+                    for _ in range(pad_size):
+                        norm_img_batch.append(pad_img)
                 norm_img_batch = np.concatenate(norm_img_batch)
                 norm_img_batch = norm_img_batch.copy()
 
@@ -419,7 +430,8 @@ class TextRecognizer(BaseOCRV20):
                 with torch.no_grad():
                     rec_result = self.postprocess_op(preds)
 
-                for rno in range(len(rec_result)):
+                # 只处理实际图像，忽略填充。
+                for rno in range(actual_batch_size):
                     rec_res[indices[beg_img_no + rno]] = rec_result[rno]
                 elapse += time.time() - starttime
 
