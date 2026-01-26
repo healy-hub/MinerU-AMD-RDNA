@@ -310,6 +310,9 @@ class TextDetector(BaseOCRV20):
         with torch.no_grad():
             inp = torch.from_numpy(img)
             inp = inp.to(self.device)
+            # Check format
+            if not inp.is_contiguous():
+                inp = inp.contiguous()
             outputs = self.net(inp)
 
         preds = {}
