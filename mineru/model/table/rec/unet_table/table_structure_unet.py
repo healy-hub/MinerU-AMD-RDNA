@@ -194,6 +194,8 @@ class TSRUnet:
     def unrotate_polygons(
         self, polygons: np.ndarray, angle: float, img_shape: tuple
     ) -> np.ndarray:
+        if polygons is None or polygons.size == 0:
+            return np.array([])
         # 将多边形旋转回原始位置
         (h, w) = img_shape
         center = (w // 2, h // 2)
