@@ -357,8 +357,7 @@ class TextRecognizer(BaseOCRV20):
                 actual_batch_size = len(norm_img_batch)
                 if actual_batch_size < batch_num:
                     pad_size = batch_num - actual_batch_size
-                    # Use the first image shape as template (they are all same shape here)
-                    # norm_img_batch is a list of [1, C, H, W] arrays
+                    # Use the first image shape as template, norm_img_batch is a list of [1, C, H, W] arrays
                     pad_img = np.zeros_like(norm_img_batch[0])
                     for _ in range(pad_size):
                         norm_img_batch.append(pad_img)
